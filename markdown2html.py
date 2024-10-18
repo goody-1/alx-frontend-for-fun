@@ -14,14 +14,17 @@ def parse_heading(line):
         return f"<h{heading_level}>{heading_text}</h{heading_level}>\n"
     return ""
 
+
 def parse_list_item(line):
     """Convert a Markdown list item to HTML."""
     list_item = line[2:].strip()
     return f"    <li>{list_item}</li>\n"
 
+
 def parse_paragraph(line):
     """Convert a Markdown paragraph to HTML."""
     return f"<p>{line}</p>\n"
+
 
 def convert_markdown_line(line, in_list):
     """Convert a single line of Markdown to HTML based on its content."""
@@ -46,6 +49,7 @@ def convert_markdown_line(line, in_list):
         if in_list:
             return parse_paragraph(line), False, "</ul>\n"
         return parse_paragraph(line), in_list, ""
+
 
 def convert_markdown_to_html(input_file, output_file):
     """Main function to convert a Markdown file to HTML."""
