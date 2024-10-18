@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 Converting Markdown to HTML
 """
@@ -7,9 +7,9 @@ import os
 
 
 def parse_heading(line):
-    """Convert a Markdown heading to HTML."""
+    """Convert a Markdown heading to HTML (supports heading levels 1 to 6)."""
     heading_level = len(line.split(' ')[0])
-    if heading_level <= 6:
+    if 1 <= heading_level <= 6:  # Check for heading levels between 1 and 6
         heading_text = line[heading_level:].strip()
         return f"<h{heading_level}>{heading_text}</h{heading_level}>\n"
     return ""
@@ -18,61 +18,73 @@ def parse_heading(line):
 def parse_unordered_list_item(line):
     """Convert a Markdown unordered list item to HTML."""
     list_item = line[2:].strip()
-    return f"    <li>{list_item}</li>\n"
+    return f"<li>{list_item}</li>\n"
 
 
 def parse_ordered_list_item(line):
     """Convert a Markdown ordered list item to HTML."""
     list_item = line[2:].strip()
-    return f"    <li>{list_item}</li>\n"
+    return f"<li>{list_item}</li>\n"
 
 
-def parse_paragraph(line):
-    """Convert a Markdown paragraph to HTML."""
-    return f"<p>{line}</p>\n"
+def parse_paragraph(lines):
+    """Convert multiple lines of Markdown text into a single HTML paragraph."""
+    paragraph = "<p>\n" + "<br/>\n".join(lines) + "\n</p>\n"
+    return paragraph
 
 
-def convert_markdown_line(line, in_ulist, in_olist):
+def convert_markdown_line(line, in_ulist, in_olist, in_paragraph):
     """Convert a single line of Markdown to HTML based on its content."""
-    line = line.strip()
+    line = line.rstrip()
 
-    # Check for headings
+    # Check for headings (supports heading levels 1 to 6)
     if line.startswith('#'):
-        # Close the list if we're inside one
-        if in_ulist:
-            return parse_heading(line), False, in_olist, "</ul>\n"
-        if in_olist:
-            return parse_heading(line), in_ulist, False, "</ol>\n"
-        return parse_heading(line), in_ulist, in_olist, ""
+        heading_level = len(line.split(' ')[0])
+        if 1 <= heading_level <= 6:
+            # Close any lists if we're inside one
+            if in_ulist:
+                return parse_heading(line), False, in_olist, False, "</ul>\n"
+            if in_olist:
+                return parse_heading(line), in_ulist, False, False, "</ol>\n"
+            return parse_heading(line), in_ulist, in_olist, False, ""
 
     # Check for unordered lists (- syntax)
     elif line.startswith('- '):
         if not in_ulist:
             if in_olist:
                 return (
-                    parse_unordered_list_item(line),
-                    True, False, "</ol>\n<ul>\n")
-            return parse_unordered_list_item(line), True, in_olist, "<ul>\n"
-        return parse_unordered_list_item(line), in_ulist, in_olist, ""
+                    parse_unordered_list_item(line), True,
+                    False, False, "</ol>\n<ul>\n")
+            return (
+                parse_unordered_list_item(line), True,
+                in_olist, False, "<ul>\n")
+        return parse_unordered_list_item(line), in_ulist, in_olist, False, ""
 
     # Check for ordered lists (* syntax)
     elif line.startswith('* '):
         if not in_olist:
             if in_ulist:
                 return (
-                    parse_ordered_list_item(line),
-                    False, True, "</ul>\n<ol>\n")
-            return parse_ordered_list_item(line), in_ulist, True, "<ol>\n"
-        return parse_ordered_list_item(line), in_ulist, in_olist, ""
+                    parse_ordered_list_item(line), False,
+                    True, False, "</ul>\n<ol>\n")
+            return (
+                parse_ordered_list_item(line), in_ulist,
+                True, False, "<ol>\n")
+        return parse_ordered_list_item(line), in_ulist, in_olist, False, ""
 
-    # Treat as a paragraph if it's not empty
-    else:
-        # Close any open lists
+    # Treat as paragraph text if it's not empty
+    elif line:
         if in_ulist:
-            return parse_paragraph(line), False, in_olist, "</ul>\n"
+            return line, False, in_olist, True, "</ul>\n"
         if in_olist:
-            return parse_paragraph(line), in_ulist, False, "</ol>\n"
-        return parse_paragraph(line), in_ulist, in_olist, ""
+            return line, in_ulist, False, True, "</ol>\n"
+        return line, in_ulist, in_olist, True, ""
+
+    # If it's an empty line, it may indicate the end of a paragraph
+    else:
+        if in_paragraph:
+            return "", in_ulist, in_olist, False, ""  # Close the paragraph
+        return "", in_ulist, in_olist, False, ""  # Just skip empty lines
 
 
 def convert_markdown_to_html(input_file, output_file):
@@ -80,22 +92,47 @@ def convert_markdown_to_html(input_file, output_file):
     try:
         with open(input_file, 'r') as markdown_file:
             html_content = ""
-            in_ulist = False  # Currently inside an unordered list?
-            in_olist = False  # Currently inside an ordered list?
+            in_ulist = False  # Track if we're inside an unordered list
+            in_olist = False  # Track if we're inside an ordered list
+            in_paragraph = False  # Track if we're inside a paragraph
+            paragraph_lines = []  # Hold lines that make up a paragraph
 
             for line in markdown_file:
-                (c_line, in_ulist,
-                 in_olist, list_closer) = convert_markdown_line(
-                    line, in_ulist, in_olist)
-                html_content += list_closer + c_line
+                (converted_line, in_ulist, in_olist,
+                 in_paragraph_active, list_closer) = convert_markdown_line(
+                     line, in_ulist, in_olist, in_paragraph)
 
-            # Close any unclosed lists at the end of the file
+                # Close list if needed
+                if list_closer:
+                    html_content += list_closer
+
+                # Handle paragraphs
+                if in_paragraph_active:
+                    paragraph_lines.append(converted_line)
+
+                # If transitioning out of a paragraph (empty line or end)
+                if in_paragraph and not in_paragraph_active:
+                    html_content += parse_paragraph(paragraph_lines)
+                    paragraph_lines = []
+
+                in_paragraph = in_paragraph_active
+
+                # If it's a heading or list, append it directly
+                if not in_paragraph_active and converted_line:
+                    html_content += converted_line
+
+            # Close any open paragraph at the end of the file
+            if in_paragraph:
+                html_content += parse_paragraph(paragraph_lines)
+
+            # Close any open unordered list at the end of the file
             if in_ulist:
                 html_content += "</ul>\n"
+
+            # Close any open ordered list at the end of the file
             if in_olist:
                 html_content += "</ol>\n"
 
-        # Write the generated HTML to the output file
         with open(output_file, 'w') as html_file:
             html_file.write(html_content)
 
@@ -105,7 +142,7 @@ def convert_markdown_to_html(input_file, output_file):
 
 
 def main():
-    """The entry to the program"""
+    """Handle command-line arguments and trigger the Markdown conversion."""
     if len(sys.argv) < 3:
         print("Usage: ./markdown2html.py README.md README.html",
               file=sys.stderr)
@@ -123,4 +160,5 @@ def main():
 
 
 if __name__ == "__main__":
+    """Main context"""
     main()
