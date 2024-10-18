@@ -5,6 +5,7 @@ Converting Markdown to HTML
 import sys
 import os
 import re
+import hashlib
 
 
 def parse_heading(line):
@@ -12,27 +13,27 @@ def parse_heading(line):
     heading_level = len(line.split(' ')[0])
     if 1 <= heading_level <= 6:  # Check for heading levels between 1 and 6
         heading_text = line[heading_level:].strip()
-        return f"<h{heading_level}>{parse_bold_and_italics(heading_text)}\
-</h{heading_level}>\n"
+        return f"<h{heading_level}>\
+{parse_custom_syntax(heading_text)}</h{heading_level}>\n"
     return ""
 
 
 def parse_unordered_list_item(line):
     """Convert a Markdown unordered list item to HTML."""
     list_item = line[2:].strip()
-    return f"<li>{parse_bold_and_italics(list_item)}</li>\n"
+    return f"<li>{parse_custom_syntax(list_item)}</li>\n"
 
 
 def parse_ordered_list_item(line):
     """Convert a Markdown ordered list item to HTML."""
     list_item = line[2:].strip()
-    return f"<li>{parse_bold_and_italics(list_item)}</li>\n"
+    return f"<li>{parse_custom_syntax(list_item)}</li>\n"
 
 
 def parse_paragraph(lines):
     """Convert multiple lines of Markdown text into a single HTML paragraph."""
     paragraph = "<p>\n" + "<br/>\n".join(
-        [parse_bold_and_italics(line) for line in lines]) + "\n</p>\n"
+        [parse_custom_syntax(line) for line in lines]) + "\n</p>\n"
     return paragraph
 
 
@@ -42,6 +43,31 @@ def parse_bold_and_italics(text):
     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
     # Italics (__text__ -> <em>text</em>)
     text = re.sub(r'__(.*?)__', r'<em>\1</em>', text)
+    return text
+
+
+def convert_md5(text):
+    """Convert text inside [[ ]] to MD5 hash."""
+    return hashlib.md5(text.encode()).hexdigest()
+
+
+def remove_c(text):
+    """Remove all 'c' (case insensitive) from the text inside (( ))."""
+    return re.sub(r'[cC]', '', text)
+
+
+def parse_custom_syntax(text):
+    """Parse custom syntax for MD5 hashing ([[ ]]) and removing 'c' (( ))."""
+    # Convert text inside [[ ]] to its MD5 hash
+    text = re.sub(r'\[\[(.*?)\]\]',
+                  lambda match: convert_md5(match.group(1)), text)
+    # Remove 'c' (case insensitive) from text inside (( ))
+    text = re.sub(r'\(\((.*?)\)\)',
+                  lambda match: remove_c(match.group(1)), text)
+
+    # Then apply the bold and italics transformations
+    text = parse_bold_and_italics(text)
+
     return text
 
 
@@ -64,29 +90,23 @@ def convert_markdown_line(line, in_ulist, in_olist, in_paragraph):
     elif line.startswith('- '):
         if not in_ulist:
             if in_olist:
-                return (
-                    parse_unordered_list_item(line), True,
-                    False, False, "</ol>\n<ul>\n")
-            return (
-                parse_unordered_list_item(line), True,
-                in_olist, False, "<ul>\n")
-        return (
-            parse_unordered_list_item(line), in_ulist,
-            in_olist, False, "")
+                return (parse_unordered_list_item(line), True,
+                        False, False, "</ol>\n<ul>\n")
+            return (parse_unordered_list_item(line), True,
+                    in_olist, False, "<ul>\n")
+        return (parse_unordered_list_item(line), in_ulist,
+                in_olist, False, "")
 
     # Check for ordered lists (* syntax)
     elif line.startswith('* '):
         if not in_olist:
             if in_ulist:
-                return (
-                    parse_ordered_list_item(line), False,
-                    True, False, "</ul>\n<ol>\n")
-            return (
-                parse_ordered_list_item(line), in_ulist,
-                True, False, "<ol>\n")
-        return (
-            parse_ordered_list_item(line), in_ulist,
-            in_olist, False, "")
+                return (parse_ordered_list_item(line), False,
+                        True, False, "</ul>\n<ol>\n")
+            return (parse_ordered_list_item(line), in_ulist,
+                    True, False, "<ol>\n")
+        return (parse_ordered_list_item(line), in_ulist,
+                in_olist, False, "")
 
     # Treat as paragraph text if it's not empty
     elif line:
@@ -115,8 +135,8 @@ def convert_markdown_to_html(input_file, output_file):
 
             for line in markdown_file:
                 (converted_line, in_ulist, in_olist, in_paragraph_active,
-                 list_closer) = convert_markdown_line(
-                     line, in_ulist, in_olist, in_paragraph)
+                    list_closer) = convert_markdown_line(
+                        line, in_ulist, in_olist, in_paragraph)
 
                 # Close list if needed
                 if list_closer:
@@ -124,8 +144,7 @@ def convert_markdown_to_html(input_file, output_file):
 
                 # Handle paragraphs
                 if in_paragraph_active:
-                    paragraph_lines.append(
-                        parse_bold_and_italics(converted_line))
+                    paragraph_lines.append(parse_custom_syntax(converted_line))
 
                 # If transitioning out of a paragraph (empty line or end)
                 if in_paragraph and not in_paragraph_active:
