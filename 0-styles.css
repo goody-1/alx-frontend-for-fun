@@ -1,0 +1,29 @@
+
+body {
+    background: url('html_css_js.png') no-repeat;
+    background-color: #f6f6f6;
+    background-size: calc(100% - 4vh);
+    background-position: center;
+    background-position-y: 15vh;
+    height: 80vh;
+}
+ul {
+    display: flex;
+    justify-content: space-between;
+    padding-left: 2vw;
+    padding-right: 2vw;
+    margin: 0;
+    margin-top: 5vh;
+}
+
+li {
+    border: 3px solid #949494;
+    border-radius: 20px;
+    font-size: 3rem;
+    font-weight: bold;
+    list-style: none;
+    padding-top: 2vh;
+    padding-bottom: 83vh;
+    width: 30vw;
+    text-align: center;
+}
