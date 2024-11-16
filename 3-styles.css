@@ -1,0 +1,129 @@
+:root {
+    --primary-color: rgb(213, 23, 23);
+    --secondary-color: white;
+    --font-size-large: 18px;
+    --padding-small: 10px;
+  }
+
+/* General Reset */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+  }
+  nav.menu {
+    display: flex;
+    flex-direction: column;
+  }
+  /* Base styles for the menu container */
+  .menu {
+    position: relative;
+  }
+  
+  /* Hides the checkbox input */
+  .menu-open {
+    display: none;
+  }
+  
+  /* Style for the hamburger button */
+  .menu-open-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    width: 70px;
+    height: 70px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 50%;
+    color: var(--secondary-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+  
+  /* Hamburger menu lines */
+  .menu-line {
+    display: block;
+    width: 30px;
+    height: 3px;
+    background-color: var(--secondary-color);
+    margin: 2px 0;
+    transition: all 0.3s ease;
+  }
+
+  .menu-open:checked + .menu-open-button {
+    width: 60px;
+    height: 60px;
+  }
+  /* Transform hamburger to a cancel icon when checked */
+  .menu-open:checked + .menu-open-button .menu-line-1 {
+    transform: rotate(45deg) translate(5px, 5px);
+  }
+  
+  .menu-open:checked + .menu-open-button .menu-line-2 {
+    opacity: 0; /* Hide the middle line */
+  }
+  
+  .menu-open:checked + .menu-open-button .menu-line-3 {
+    transform: rotate(-45deg) translate(5px, -5px);
+  }
+  
+  /* Base styles for menu items */
+  .menu-item {
+    position: fixed;
+    left: 3vw;
+    top: 20px; /* Adjust to align vertically later */
+    transform: translateX(-50%) scale(0); /* Hidden initially */
+    width: 60px;
+    height: 60px;
+    background-color: var(--primary-color);
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 18px;
+    text-decoration: none;
+    transition: all 0.5s ease;
+    pointer-events: none; /* Prevent hover interaction when hidden */
+    margin-top: 4vh;
+  }
+  
+  /* Reveal menu items when menu is open */
+  .menu-open:checked ~ .menu-item {
+      transform: translateX(-50%) scale(1); /* Scale to full size */
+      pointer-events: auto; /* Allow interaction */
+    }
+    
+    /* Change menu items color on hover */
+    .menu-item:hover {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+      border: 2px solid var(--primary-color);
+    }
+  
+  /* Position menu items vertically and with spacing */
+  .menu-item:nth-child(3) { /* First item */
+    top: 70px;
+  }
+  
+  .menu-item:nth-child(4) { /* Second item */
+    top: 140px;
+  }
+  
+  .menu-item:nth-child(5) { /* Third item */
+    top: 210px;
+  }
+  
+  .menu-item:nth-child(6) { /* Fourth item */
+    top: 280px;
+  }
+  
+  .menu-item:nth-child(7) { /* Fifth item */
+    top: 350px;
+  }
+  
