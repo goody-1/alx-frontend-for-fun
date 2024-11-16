@@ -1,0 +1,27 @@
+h2 {
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-weight: bolder;
+    font-size: 4rem;
+}
+
+h2 a {
+    color: rgb(163, 7, 7);
+    text-decoration: none;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+h2 a::after {
+    content: ''; /* Creates a line */
+    position: absolute;
+    bottom: 0; /* Positions the line below the text */
+    left: 0;
+    width: 0; /* Initially, the line is hidden */
+    height: 5px; /* Thickness of the underline */
+    background-color: rgb(163, 7, 7); /* Underline color */
+    transition: width 0.3s ease; /* Smooth underline appearance */
+  }
+  
+  h2 a:hover::after {
+    width: 100%; /* Extends the underline across the link */
+  }
